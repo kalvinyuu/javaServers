@@ -1,0 +1,148 @@
+* im buildng a project portfolio its like an onion it consits of layers;
+ # 1. Building a https 1.1 server to learn about networks.
+ # 2. Implementing JDK built in server and netty instance.
+ # 3. Performing some basic unit and integration tests.
+      # 3.5. some performance comparision tests too.
+
+      
+#+begin_src java :results output
+  public class Main {
+      public static void main(String[] args) {
+          System.out.print("hello, world");
+      }
+  }
+#+end_src
+
+#+RESULTS:
+: hello, world
+
+
+#+begin_src java :results output
+    @FunctionalInterface
+    interface Exponenter {
+  	  int exponent(int a, int b)
+  }
+  Exponenter a = (x, y) -> x ** y;
+#+end_src
+
+** PLAN
+ implementation 1 build a async http 1.1 server
+ secondly add https
+ thirdly build a NIO selector server
+
+*** AI generated reminders
+
+// Flow control (5)
+try           // Resource management
+catch         // Error handling  
+finally       // Cleanup
+if            // Basic conditions
+while         // Reading input
+
+// Variables (5)
+int           // Port numbers, byte counts
+String        // Request/response text
+byte[]        // Raw data
+boolean       // Loop conditions
+
+// Objects (5)
+ServerSocket  // Listens for connections
+Socket        // Represents a connection
+InputStream   // Read from client
+OutputStream  // Write to client
+PrintWriter   // Easy text output
+
+┌─────────────────────────────────────┐
+│  1. ServerSocket.accept()           │
+│     - Blocks until client connects  │
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  2. socket.getInputStream()         │
+│  3. Read until blank line           │
+│     - Parse request line            │
+│       (GET/POST/PUT/DELETE)         │
+│     - Parse all headers             │
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  4. Check if request has body       │
+│     - POST/PUT usually have body    │
+│     - GET/DELETE usually don't      │
+│                                     │
+│     How to know body length?        │
+│     ✓ Content-Length header: 2048   │
+│     ✓ Transfer-Encoding: chunked    │
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  5. Read exactly that many bytes    │
+│     from input stream               │
+│                                     │
+│     Body could be:                  │
+│     • JSON string                   │
+│     • Form data (name=value&...)    │
+│     • Binary file upload            │
+│     • XML, HTML, etc.               │
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  6. Process request                 │
+│     switch(method) {                │
+│       case "GET": serve file        │
+│       case "POST": process data     │
+│       case "PUT": store data        │
+│       default: 405 Method Not Allowed│
+│     }                               │
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  7. Build response                  │
+│     • Status line (HTTP/1.1 200 OK) │
+│     • Headers (Content-Type, etc.)  │
+│     • BLANK LINE                    │
+│     • Response body bytes           │
+│                                     │
+│     Calculate body bytes:           │
+│     byte[] body = html.getBytes()   │
+│     int length = body.length        │
+│     addHeader("Content-Length", length)│
+└─────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────┐
+│  8. output.write(responseBytes)     │
+│  9. Check "Connection" header       │
+│     • "close" → socket.close()      │
+│     • "keep-alive" → go to step 3   │
+│       (read next request on same connection)│
+└─────────────────────────────────────┘
+
+POST Request Clarification
+
+Your question: "is a post request asking the server to post? yes?"
+Answer: No! This is a common confusion:
+
+    GET = Client asks server: "Give me this resource"
+
+    POST = Client says: "Here's some data, process/store it"
+
+    PUT = Client says: "Store this data at this exact location"
+
+    DELETE = Client says: "Remove this resource"
+
+So POST /submit-form HTTP/1.1 means: "Server, I'm sending you form data to process."
+Body Content Types
+
+Can the body be JSON or HTML?
+Yes! The body can be anything - JSON, HTML, XML, binary image data, etc.
+
+The Content-Type header tells you what it is:
+
+    Content-Type: application/json → Parse as JSON
+
+    Content-Type: text/html → Parse as HTML
+
+    Content-Type: application/x-www-form-urlencoded → URL-encoded form data
+
+    Content-Type: multipart/form-data → File uploads
+
